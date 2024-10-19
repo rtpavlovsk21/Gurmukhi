@@ -1,12 +1,21 @@
 import { useEffect, useState } from 'react';
-import { View, Text, FlatList, SafeAreaView } from "react-native"
-import { GlobalStyles } from "../GlobalStyles"
-import { collection, query, where, getDocs, updateDoc, doc, getDoc } from "firebase/firestore";
-import { db } from "../../firebaseConfig";
+import { View, Text, FlatList, SafeAreaView } from "react-native";
+import { GlobalStyles } from "../GlobalStyles";
 import { Avatar } from '@rneui/base';
 
-export default function Leaderboard() {
+// Mock Firebase Firestore for Testing
+const mockUsersData = [
+    { uid: '1', username: 'Alice', exp: 500, avatarColor: 'blue', ranking: 0 },
+    { uid: '2', username: 'Bob', exp: 800, avatarColor: 'green', ranking: 0 },
+    { uid: '3', username: 'Charlie', exp: 1200, avatarColor: 'red', ranking: 0 }
+];
 
+const mockUpdateDoc = async (docRef, data) => {
+    console.log(`Updating user ${docRef} with data:`, data);
+    return Promise.resolve();
+};
+
+export default function Leaderboard() {
     const [usersDataLB, setUsersDataLB] = useState([]);
     const [topThreeData, setTopThreeData] = useState([]);
 
@@ -15,7 +24,7 @@ export default function Leaderboard() {
 
         const topThree = sortedData.slice(0, 3);
         const topThreeIds = topThree.map((user, index) => {
-            updateDoc(doc(db, "users", user.uid), {
+            mockUpdateDoc(`users/${user.uid}`, {
                 ranking: index + 1
             });
             return user.uid;
@@ -25,7 +34,7 @@ export default function Leaderboard() {
 
         sortedData.forEach((user, index) => {
             if (!topThreeIds.includes(user.uid)) {
-                updateDoc(doc(db, "users", user.uid), {
+                mockUpdateDoc(`users/${user.uid}`, {
                     ranking: index + 1
                 });
             }
@@ -33,35 +42,19 @@ export default function Leaderboard() {
 
         setUsersDataLB(sortedData);
     };
-    
 
     const getAllUsersLB = async () => {
-        const q = query(collection(db, "users")); // , where("capital", "==", true
-        const querySnapshot = await getDocs(q);
-
-        let users = [];
-
-        querySnapshot.forEach((doc) => {
-            const userData = doc.data()
-            console.log(doc.id, " => ", doc.data());
-            console.log("USERRRRR DATAAAAA ", userData)
-            users.push({
-                ...userData,
-                uid: doc.id,
-                username: userData.username,
-                exp: userData.exp,
-            });
-        });
-        updateUserRankings(users)
-    } 
+        console.log("Fetching all users from mock data...");
+        // Use mockUsersData for testing
+        updateUserRankings(mockUsersData);
+    };
 
     useEffect(() => {
-        getAllUsersLB()
-    }, [])
-
+        getAllUsersLB();
+    }, []);
 
     return (
-        <SafeAreaView style={{height: '100%'}}>
+        <SafeAreaView style={{ height: '100%' }}>
             <FlatList
                 data={usersDataLB.sort((a, b) => b.exp - a.exp)}
                 keyExtractor={(item) => item.uid.toString()}
@@ -74,33 +67,28 @@ export default function Leaderboard() {
                                 size={48}
                                 containerStyle={{ backgroundColor: item.avatarColor }}
                             />
-                            { item.ranking == 1 ? (
+                            {item.ranking === 1 ? (
                                 <View style={GlobalStyles.avatarBadgeGold}>
                                     <Text style={GlobalStyles.leaderboardTop3Number}>🥇</Text>
                                 </View>
-                            ) : (
-                                item.ranking == 2 ? (
-                                    <View style={GlobalStyles.avatarBadgeSilver}>
-                                        <Text style={GlobalStyles.leaderboardTop3Number}>🥈</Text>
-                                    </View>
-                                ) : (
-                                    item.ranking == 3 ? (
-                                        <View style={GlobalStyles.avatarBadgeBronze}>
-                                            <Text style={GlobalStyles.leaderboardTop3Number}>🥉</Text>
-                                        </View>
-                                    ) : (
-                                        null
-                                    )
-                                )
-                            )
-                            }
+                            ) : item.ranking === 2 ? (
+                                <View style={GlobalStyles.avatarBadgeSilver}>
+                                    <Text style={GlobalStyles.leaderboardTop3Number}>🥈</Text>
+                                </View>
+                            ) : item.ranking === 3 ? (
+                                <View style={GlobalStyles.avatarBadgeBronze}>
+                                    <Text style={GlobalStyles.leaderboardTop3Number}>🥉</Text>
+                                </View>
+                            ) : null}
                         </View>
 
-                        <Text style={{paddingLeft: 18, marginRight: 'auto', alignSelf: 'center'}}>{`${item.username}`}</Text>
-                        <Text style={{alignSelf: 'center'}}>{`${item.exp} XP`}</Text>
+                        <Text style={{ paddingLeft: 18, marginRight: 'auto', alignSelf: 'center' }}>
+                            {`${item.username}`}
+                        </Text>
+                        <Text style={{ alignSelf: 'center' }}>{`${item.exp} XP`}</Text>
                     </View>
                 )}
             />
-        </SafeAreaView>  
-    )
+        </SafeAreaView>
+    );
 }
